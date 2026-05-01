@@ -283,12 +283,14 @@ function render() {
 /* 틱 */
 function startLocalTick() {
   stopTick();
+  let tickCount = 0;
   localInterval = setInterval(() => {
     if (state.status !== 'running') { stopTick(); return; }
+    tickCount++;
     state.remaining = Math.max(0, state.remaining - 1);
     if (state.remaining === 0) {
       state.status = 'ended'; stopTick(); save();
-    } else {
+    } else if (tickCount >= 2) {
       timerRef.update({remaining: state.remaining, lastTick: Date.now()});
     }
     render();
