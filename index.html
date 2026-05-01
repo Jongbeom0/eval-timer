@@ -299,7 +299,10 @@ function stopTick() { clearInterval(localInterval); localInterval = null; }
 /* 어드민 제어 */
 function doStart() {
   if (state.status==='running' || state.status==='ended') return;
-  state.status = 'running'; save(); startLocalTick();
+  state.status = 'running';
+  state.lastTick = Date.now();
+  timerRef.set({...state});
+  startLocalTick();
 }
 function doPause() {
   if (state.status!=='running') return;
@@ -350,14 +353,18 @@ function doLogin() {
     document.getElementById('loginErr').textContent = '';
     document.getElementById('pwInput').value = '';
     isAdmin = true;
-    showPage('admin');
-    if (state.status==='running') startLocalTick();
+    // 첫 접속 시 (데이터 없을 때만) 초기화
+    timerRef.once('value', snap => {
+      if (!snap.val()) save();
+      showPage('admin');
+      if (state.status==='running') startLocalTick();
+    });
   } else {
     document.getElementById('loginErr').textContent = '비밀번호가 올바르지 않습니다.';
   }
 }
 
-/* 초기화 */
+/* 초기화 - Firebase에 데이터 없을 때만 기본값 저장 */
 timerRef.once('value', snap => {
   if (!snap.val()) save();
 });
