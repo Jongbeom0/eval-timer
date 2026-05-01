@@ -203,7 +203,7 @@ db.ref('.info/connected').on('value', snap => {
 // Firebase 실시간 리스닝
 timerRef.on('value', snap => {
   const data = snap.val();
-  if (!data) return;
+  if (!data) { render(); return; }
   // 관리자가 로컬 틱 중일 때는 remaining만 Firebase에서 덮어쓰지 않음
   if (isAdmin && state.status === 'running') {
     state = { ...data, remaining: state.remaining };
@@ -399,6 +399,8 @@ function doLogin() {
 
 document.getElementById('navLink').textContent='관리자';
 render();
+// Firebase에 초기 데이터가 없으면 기본값 저장
+timerRef.once('value', snap => { if (!snap.val()) saveState(); });
 </script>
 </body>
 </html>
