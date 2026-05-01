@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>선정평가 타이머</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nanum Gothic',sans-serif;background:#0f1117;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.page{width:100%;max-width:800px;padding:2rem;display:none}
+.page.active{display:flex;flex-direction:column;align-items:center}
+
+.session-tabs{display:flex;gap:12px;margin-bottom:2rem}
+.tab{padding:10px 28px;border-radius:50px;font-size:15px;font-weight:600;cursor:default;border:2px solid transparent;transition:all .3s}
+.tab.active-tab{background:#4f8ef7;color:#fff;border-color:#4f8ef7}
+.tab.inactive-tab{background:rgba(255,255,255,.08);color:#aaa;border-color:rgba(255,255,255,.1)}
+.timer-display{font-size:clamp(80px,18vw,180px);font-weight:700;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;transition:color .3s}
+.timer-display.normal{color:#ffffff}
+.timer-display.warning{color:#f59e0b;animation:pulse 1s infinite}
+.timer-display.danger{color:#ef4444;animation:pulse .5s infinite}
+.timer-display.ended{color:#ef4444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.status-label{margin-top:1.5rem;font-size:18px;color:#aaa;letter-spacing:2px;text-transform:uppercase}
+.status-label.running{color:#4ade80}
+.status-label.paused{color:#f59e0b}
+.status-label.stopped{color:#aaa}
+.status-label.ended{color:#ef4444}
+.session-info{margin-top:1rem;font-size:14px;color:#666}
+
+.admin-card{background:#1a1d27;border-radius:16px;padding:2rem;width:100%;max-width:520px}
+.admin-title{font-size:22px;font-weight:700;margin-bottom:1.5rem;text-align:center;color:#e2e8f0}
+.section-title{font-size:13px;font-weight:600;color:#888;letter-spacing:1px;text-transform:uppercase;margin:1.2rem 0 .6rem}
+.time-row{display:flex;align-items:center;gap:10px;margin-bottom:.5rem}
+.time-row label{font-size:14px;color:#ccc;width:80px}
+.time-row input{background:#0f1117;border:1px solid #333;border-radius:8px;color:#fff;font-size:16px;padding:6px 10px;width:70px;text-align:center}
+.time-row span{font-size:13px;color:#666}
+.ctrl-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:1rem}
+.ctrl-btn{padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-start{background:#22c55e;color:#000}
+.btn-pause{background:#f59e0b;color:#000}
+.btn-stop{background:#ef4444;color:#fff}
+.btn-reset{background:#3b82f6;color:#fff}
+.btn-pres{background:#6366f1;color:#fff}
+.btn-qa{background:#8b5cf6;color:#fff}
+.ctrl-btn:hover{opacity:.85;transform:translateY(-1px)}
+.ctrl-btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+.switch-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:.5rem}
+.current-session{background:#1e293b;border-radius:10px;padding:12px;margin-top:1rem;text-align:center}
+.current-session .cs-label{font-size:12px;color:#666;margin-bottom:4px}
+.current-session .cs-time{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;color:#e2e8f0}
+.current-session .cs-session{font-size:13px;margin-top:4px}
+.cs-session.pres{color:#6366f1}
+.cs-session.qa{color:#8b5cf6}
+
+.login-card{background:#1a1d27;border-radius:16px;padding:2.5rem;width:100%;max-width:360px;text-align:center}
+.login-card h2{font-size:20px;margin-bottom:.5rem;color:#e2e8f0}
+.login-card p{font-size:14px;color:#666;margin-bottom:1.5rem}
+.login-card input{width:100%;background:#0f1117;border:1px solid #333;border-radius:8px;color:#fff;font-size:18px;padding:12px;text-align:center;letter-spacing:4px;margin-bottom:1rem;outline:none}
+.login-card input:focus{border-color:#4f8ef7}
+.login-btn{width:100%;padding:12px;background:#4f8ef7;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
+.login-btn:hover{background:#3b7fd9}
+.error-msg{color:#ef4444;font-size:13px;margin-top:.5rem;min-height:18px}
+.nav-link{position:fixed;top:16px;right:20px;font-size:13px;color:#555;cursor:pointer;text-decoration:underline}
+.nav-link:hover{color:#888}
+.conn-status{position:fixed;top:16px;left:20px;font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.07);color:#666}
+.conn-status.connected{color:#4ade80}
+.conn-status.disconnected{color:#ef4444}
+</style>
+</head>
+<body>
+
+<span class="conn-status" id="connStatus">연결 중...</span>
+<span class="nav-link" id="navLink" onclick="toggleNav()"></span>
+
+<!-- VIEWER -->
+<div class="page active" id="viewerPage">
+  <div class="session-tabs">
+    <div class="tab" id="tab-pres">발표</div>
+    <div class="tab" id="tab-qa">질의응답</div>
+  </div>
+  <div class="timer-display normal" id="timerDisplay">--:--</div>
+  <div class="status-label stopped" id="statusLabel">대기 중</div>
+  <div class="session-info" id="sessionInfo"></div>
+</div>
+
+<!-- LOGIN -->
+<div class="page" id="loginPage">
+  <div class="login-card">
+    <h2>관리자 로그인</h2>
+    <p>어드민 비밀번호를 입력하세요</p>
+    <input type="password" id="pwInput" placeholder="••••" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="error-msg" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="adminPage">
+  <div class="admin-card">
+    <div class="admin-title">타이머 관리</div>
+
+    <div class="section-title">시간 설정 (분)</div>
+    <div class="time-row">
+      <label>발표</label>
+      <input type="number" id="presMin" value="20" min="1" max="99"/>
+      <span>분</span>
+    </div>
+    <div class="time-row">
+      <label>질의응답</label>
+      <input type="number" id="qaMin" value="15" min="1" max="99"/>
+      <span>분</span>
+    </div>
+
+    <div class="section-title">세션 전환</div>
+    <div class="switch-btns">
+      <button class="ctrl-btn btn-pres" onclick="switchSession('pres')">발표 세션으로</button>
+      <button class="ctrl-btn btn-qa" onclick="switchSession('qa')">질의응답 세션으로</button>
+    </div>
+
+    <div class="section-title">타이머 제어</div>
+    <div class="ctrl-btns">
+      <button class="ctrl-btn btn-start" id="btnStart" onclick="doStart()">시작</button>
+      <button class="ctrl-btn btn-pause" id="btnPause" onclick="doPause()" disabled>일시정지</button>
+      <button class="ctrl-btn btn-stop" id="btnStop" onclick="doStop()" disabled>정지</button>
+      <button class="ctrl-btn btn-reset" onclick="doReset()">초기화</button>
+    </div>
+
+    <div class="current-session">
+      <div class="cs-label">현재 타이머</div>
+      <div class="cs-time" id="adminTime">--:--</div>
+      <div class="cs-session" id="adminSession">-</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PW = 'kosac';
+const firebaseConfig = {
+  apiKey: "AIzaSyDEFL2NO7bk-Z1pvoY_XclIDvyf6FSo-Jc",
+  authDomain: "eval-timer.firebaseapp.com",
+  databaseURL: "https://eval-timer-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "eval-timer",
+  storageBucket: "eval-timer.firebasestorage.app",
+  messagingSenderId: "236224321499",
+  appId: "1:236224321499:web:6d34528eff0dbd82b4b9fe"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const timerRef = db.ref('timer');
+
+let state = {
+  session: 'pres', presTotal: 1200, qaTotal: 900,
+  remaining: 1200, status: 'stopped', lastTick: null
+};
+let localInterval = null;
+let currentPage = 'viewer';
+let isAdmin = false;
+
+// 연결 상태 표시
+db.ref('.info/connected').on('value', snap => {
+  const el = document.getElementById('connStatus');
+  if (snap.val()) { el.textContent = '● 연결됨'; el.className = 'conn-status connected'; }
+  else { el.textContent = '● 연결 끊김'; el.className = 'conn-status disconnected'; }
+});
+
+// Firebase 실시간 리스닝
+timerRef.on('value', snap => {
+  const data = snap.val();
+  if (!data) return;
+  // 관리자가 로컬 틱 중일 때는 remaining만 Firebase에서 덮어쓰지 않음
+  if (isAdmin && state.status === 'running') {
+    state = { ...data, remaining: state.remaining };
+  } else {
+    state = data;
+    // 클라이언트 측 경과 시간 보정
+    if (state.status === 'running' && state.lastTick) {
+      const elapsed = Math.floor((Date.now() - state.lastTick) / 1000);
+      state.remaining = Math.max(0, state.remaining - elapsed);
+      if (state.remaining === 0) state.status = 'ended';
+    }
+  }
+  render();
+  if (isAdmin && state.status === 'running' && !localInterval) startLocalTick();
+  if (state.status !== 'running') { clearInterval(localInterval); localInterval = null; }
+});
+
+function saveState() {
+  timerRef.set({ ...state, lastTick: Date.now() });
+}
+
+function fmt(s) {
+  s = Math.max(0, Math.floor(s));
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+function render() {
+  const rem = Math.max(0, state.remaining);
+  const disp = document.getElementById('timerDisplay');
+  const sl = document.getElementById('statusLabel');
+  disp.textContent = fmt(rem);
+
+  let cls = 'normal';
+  if (state.status === 'ended') cls = 'ended';
+  else if (rem <= 60 && state.status === 'running') cls = 'warning';
+  disp.className = 'timer-display ' + cls;
+
+  const statusMap = {running:'실행 중',paused:'일시정지',stopped:'대기 중',ended:'종료'};
+  sl.textContent = statusMap[state.status] || '대기 중';
+  sl.className = 'status-label ' + state.status;
+
+  document.getElementById('tab-pres').className = 'tab ' + (state.session==='pres'?'active-tab':'inactive-tab');
+  document.getElementById('tab-qa').className = 'tab ' + (state.session==='qa'?'active-tab':'inactive-tab');
+  document.getElementById('sessionInfo').textContent =
+    state.session==='pres' ? `발표 (${Math.round(state.presTotal/60)}분)` : `질의응답 (${Math.round(state.qaTotal/60)}분)`;
+
+  document.getElementById('adminTime').textContent = fmt(rem);
+  const asSel = document.getElementById('adminSession');
+  asSel.textContent = state.session==='pres' ? '발표 세션' : '질의응답 세션';
+  asSel.className = 'cs-session ' + state.session;
+
+  document.getElementById('presMin').value = Math.round(state.presTotal/60);
+  document.getElementById('qaMin').value = Math.round(state.qaTotal/60);
+
+  document.getElementById('btnStart').disabled = state.status==='running' || state.status==='ended';
+  document.getElementById('btnPause').disabled = state.status!=='running';
+  document.getElementById('btnStop').disabled = state.status==='stopped' || state.status==='ended';
+}
+
+function startLocalTick() {
+  clearInterval(localInterval);
+  localInterval = setInterval(() => {
+    if (state.status !== 'running') { clearInterval(localInterval); localInterval = null; return; }
+    state.remaining = Math.max(0, state.remaining - 1);
+    if (state.remaining === 0) {
+      state.status = 'ended';
+      clearInterval(localInterval); localInterval = null;
+      saveState();
+    } else if (state.remaining % 5 === 0) {
+      // 5초마다 Firebase 동기화
+      timerRef.update({ remaining: state.remaining, lastTick: Date.now() });
+    }
+    render();
+  }, 1000);
+}
+
+function doStart() {
+  if (state.status==='running' || state.status==='ended') return;
+  state.status = 'running';
+  saveState();
+  startLocalTick();
+}
+function doPause() {
+  if (state.status!=='running') return;
+  state.status = 'paused';
+  clearInterval(localInterval); localInterval = null;
+  saveState();
+}
+function doStop() {
+  state.status = 'stopped';
+  clearInterval(localInterval); localInterval = null;
+  saveState();
+}
+function doReset() {
+  clearInterval(localInterval); localInterval = null;
+  state.remaining = state.session==='pres' ? state.presTotal : state.qaTotal;
+  state.status = 'stopped';
+  state.lastTick = null;
+  saveState();
+}
+function switchSession(s) {
+  clearInterval(localInterval); localInterval = null;
+  state.session = s;
+  state.remaining = s==='pres' ? state.presTotal : state.qaTotal;
+  state.status = 'stopped';
+  state.lastTick = null;
+  saveState();
+}
+
+document.getElementById('presMin').addEventListener('change', function() {
+  const v = Math.max(1, Math.min(99, parseInt(this.value)||20));
+  this.value = v;
+  state.presTotal = v * 60;
+  if (state.session==='pres') { state.remaining = state.presTotal; state.status='stopped'; }
+  saveState();
+});
+document.getElementById('qaMin').addEventListener('change', function() {
+  const v = Math.max(1, Math.min(99, parseInt(this.value)||15));
+  this.value = v;
+  state.qaTotal = v * 60;
+  if (state.session==='qa') { state.remaining = state.qaTotal; state.status='stopped'; }
+  saveState();
+});
+
+// 페이지 전환
+function toggleNav() {
+  if (currentPage==='viewer') showLogin();
+  else { isAdmin=false; showViewer(); }
+}
+function showViewer() {
+  currentPage='viewer';
+  document.getElementById('viewerPage').classList.add('active');
+  document.getElementById('loginPage').classList.remove('active');
+  document.getElementById('adminPage').classList.remove('active');
+  document.getElementById('navLink').textContent='관리자';
+}
+function showLogin() {
+  currentPage='login';
+  document.getElementById('loginPage').classList.add('active');
+  document.getElementById('viewerPage').classList.remove('active');
+  document.getElementById('adminPage').classList.remove('active');
+  document.getElementById('navLink').textContent='뷰어로 돌아가기';
+}
+function showAdmin() {
+  currentPage='admin'; isAdmin=true;
+  document.getElementById('adminPage').classList.add('active');
+  document.getElementById('viewerPage').classList.remove('active');
+  document.getElementById('loginPage').classList.remove('active');
+  document.getElementById('navLink').textContent='뷰어로 돌아가기';
+  if (state.status==='running') startLocalTick();
+}
+function doLogin() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw===ADMIN_PW) {
+    document.getElementById('loginErr').textContent='';
+    document.getElementById('pwInput').value='';
+    showAdmin();
+  } else {
+    document.getElementById('loginErr').textContent='비밀번호가 올바르지 않습니다.';
+  }
+}
+
+document.getElementById('navLink').textContent='관리자';
+render();
+</script>
+</body>
+</html>
