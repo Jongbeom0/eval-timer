@@ -9,47 +9,51 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Nanum Gothic',sans-serif;background:#0f1117;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.page{width:100%;max-width:800px;padding:2rem;display:none}
-.page.active{display:flex;flex-direction:column;align-items:center}
 
+/* 페이지 전환 */
+.page{width:100%;max-width:860px;padding:2rem;display:none;flex-direction:column;align-items:center}
+.page.active{display:flex}
+
+/* 뷰어 */
 .session-tabs{display:flex;gap:12px;margin-bottom:2rem}
-.tab{padding:16px 48px;border-radius:50px;font-size:22px;font-weight:600;cursor:default;border:2px solid transparent;transition:all .3s}
+.tab{padding:16px 48px;border-radius:50px;font-size:22px;font-weight:600;border:2px solid transparent;transition:all .3s}
 .tab.active-tab{background:#4f8ef7;color:#fff;border-color:#4f8ef7}
 .tab.inactive-tab{background:rgba(255,255,255,.08);color:#aaa;border-color:rgba(255,255,255,.1)}
 .timer-display{font-size:clamp(160px,36vw,360px);font-weight:700;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;transition:color .3s}
-.timer-display.normal{color:#ffffff}
+.timer-display.normal{color:#fff}
 .timer-display.warning{color:#f59e0b;animation:pulse 1s infinite}
-.timer-display.danger{color:#ef4444;animation:pulse .5s infinite}
 .timer-display.ended{color:#ef4444}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-.status-label{margin-top:1.5rem;font-size:18px;color:#aaa;letter-spacing:2px;text-transform:uppercase}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-label{margin-top:1.5rem;font-size:18px;letter-spacing:2px}
 .status-label.running{color:#4ade80}
 .status-label.paused{color:#f59e0b}
-.status-label.stopped{color:#aaa}
+.status-label.stopped{color:#666}
 .status-label.ended{color:#ef4444}
-.session-info{margin-top:1rem;font-size:14px;color:#666}
-.status-bar{display:flex;align-items:center;margin-top:2.5rem;gap:0}
+.session-info{margin-top:.6rem;font-size:14px;color:#555}
+
+/* 상태바 */
+.status-bar{display:flex;align-items:center;margin-top:2.5rem}
 .step{display:flex;flex-direction:column;align-items:center;gap:8px}
 .step-dot{width:20px;height:20px;border-radius:50%;background:#2a2d3a;border:2px solid #333;transition:all .4s}
 .step-dot.active{background:#4f8ef7;border-color:#4f8ef7;box-shadow:0 0 12px #4f8ef7aa}
 .step-dot.done{background:#4ade80;border-color:#4ade80}
 .step-dot.warn{background:#f59e0b;border-color:#f59e0b;box-shadow:0 0 12px #f59e0baa;animation:pulse 1s infinite}
-.step-dot.ended{background:#ef4444;border-color:#ef4444;box-shadow:0 0 12px #ef4444aa}
-.step-label{font-size:13px;color:#555;transition:color .4s;white-space:nowrap}
+.step-dot.fin{background:#ef4444;border-color:#ef4444;box-shadow:0 0 12px #ef4444aa}
+.step-label{font-size:13px;color:#555;white-space:nowrap;transition:color .4s}
 .step-label.active{color:#4f8ef7;font-weight:600}
 .step-label.done{color:#4ade80}
 .step-label.warn{color:#f59e0b;font-weight:600}
-.step-label.ended{color:#ef4444;font-weight:600}
+.step-label.fin{color:#ef4444;font-weight:600}
 .step-line{width:60px;height:2px;background:#2a2d3a;margin-bottom:22px;transition:background .4s}
 .step-line.done{background:#4ade80}
 
+/* 어드민 */
 .admin-card{background:#1a1d27;border-radius:16px;padding:2rem;width:100%;max-width:520px}
 .admin-title{font-size:22px;font-weight:700;margin-bottom:1.5rem;text-align:center;color:#e2e8f0}
 .section-title{font-size:13px;font-weight:600;color:#888;letter-spacing:1px;text-transform:uppercase;margin:1.2rem 0 .6rem}
 .time-row{display:flex;align-items:center;gap:10px;margin-bottom:.5rem}
 .time-row label{font-size:14px;color:#ccc;width:80px}
-.time-row input{background:#0f1117;border:1px solid #333;border-radius:8px;color:#fff;font-size:16px;padding:6px 10px;width:70px;text-align:center}
-.time-row span{font-size:13px;color:#666}
+.time-row input[type=number]{background:#0f1117;border:1px solid #333;border-radius:8px;color:#fff;font-size:16px;padding:6px 10px;width:70px;text-align:center}
 .ctrl-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:1rem}
 .ctrl-btn{padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-start{background:#22c55e;color:#000}
@@ -62,75 +66,66 @@ body{font-family:'Nanum Gothic',sans-serif;background:#0f1117;color:#fff;min-hei
 .ctrl-btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
 .switch-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:.5rem}
 .current-session{background:#1e293b;border-radius:10px;padding:12px;margin-top:1rem;text-align:center}
-.current-session .cs-label{font-size:12px;color:#666;margin-bottom:4px}
-.current-session .cs-time{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;color:#e2e8f0}
-.current-session .cs-session{font-size:13px;margin-top:4px}
+.cs-label{font-size:12px;color:#666;margin-bottom:4px}
+.cs-time{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;color:#e2e8f0}
+.cs-session{font-size:13px;margin-top:4px}
 .cs-session.pres{color:#6366f1}
 .cs-session.qa{color:#8b5cf6}
 
+/* 로그인 */
 .login-card{background:#1a1d27;border-radius:16px;padding:2.5rem;width:100%;max-width:360px;text-align:center}
 .login-card h2{font-size:20px;margin-bottom:.5rem;color:#e2e8f0}
 .login-card p{font-size:14px;color:#666;margin-bottom:1.5rem}
-.login-card input{width:100%;background:#0f1117;border:1px solid #333;border-radius:8px;color:#fff;font-size:18px;padding:12px;text-align:center;letter-spacing:4px;margin-bottom:1rem;outline:none}
-.login-card input:focus{border-color:#4f8ef7}
+.pw-input{width:100%;background:#0f1117;border:1px solid #333;border-radius:8px;color:#fff;font-size:18px;padding:12px;text-align:center;letter-spacing:4px;margin-bottom:1rem;outline:none}
+.pw-input:focus{border-color:#4f8ef7}
 .login-btn{width:100%;padding:12px;background:#4f8ef7;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
-.login-btn:hover{background:#3b7fd9}
 .error-msg{color:#ef4444;font-size:13px;margin-top:.5rem;min-height:18px}
+
+/* 공통 */
 .nav-link{position:fixed;top:16px;right:20px;font-size:13px;color:#555;cursor:pointer;text-decoration:underline}
-.nav-link:hover{color:#888}
-.conn-status{position:fixed;top:16px;left:20px;font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.07);color:#666}
-.conn-status.connected{color:#4ade80}
-.conn-status.disconnected{color:#ef4444}
+.nav-link:hover{color:#aaa}
+.conn-dot{position:fixed;top:18px;left:20px;font-size:12px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.06)}
+.conn-dot.on{color:#4ade80}
+.conn-dot.off{color:#ef4444}
 </style>
 </head>
 <body>
 
-<span class="conn-status" id="connStatus">연결 중...</span>
-<span class="nav-link" id="navLink" onclick="toggleNav()"></span>
+<div class="conn-dot" id="connDot">● 연결 중</div>
+<span class="nav-link" id="navLink" onclick="toggleNav()">관리자</span>
 
-<!-- VIEWER -->
+<!-- 뷰어 -->
 <div class="page active" id="viewerPage">
   <div class="session-tabs">
-    <div class="tab" id="tab-pres">발표</div>
-    <div class="tab" id="tab-qa">질의응답</div>
+    <div class="tab inactive-tab" id="tab-pres">발표</div>
+    <div class="tab inactive-tab" id="tab-qa">질의응답</div>
   </div>
-  <div class="timer-display normal" id="timerDisplay">--:--</div>
+  <div class="timer-display normal" id="timerDisplay">00:00</div>
   <div class="status-label stopped" id="statusLabel">대기 중</div>
   <div class="session-info" id="sessionInfo"></div>
-  <div class="status-bar" id="statusBar">
-    <div class="step">
-      <div class="step-dot" id="sd0"></div>
-      <div class="step-label" id="sl0">준비</div>
-    </div>
-    <div class="step-line" id="sl-line0"></div>
-    <div class="step">
-      <div class="step-dot" id="sd1"></div>
-      <div class="step-label" id="sl1">진행중</div>
-    </div>
-    <div class="step-line" id="sl-line1"></div>
-    <div class="step">
-      <div class="step-dot" id="sd2"></div>
-      <div class="step-label" id="sl2">종료 1분전</div>
-    </div>
-    <div class="step-line" id="sl-line2"></div>
-    <div class="step">
-      <div class="step-dot" id="sd3"></div>
-      <div class="step-label" id="sl3">종료</div>
-    </div>
+  <div class="status-bar">
+    <div class="step"><div class="step-dot" id="sd0"></div><div class="step-label" id="sl0">준비</div></div>
+    <div class="step-line" id="sline0"></div>
+    <div class="step"><div class="step-dot" id="sd1"></div><div class="step-label" id="sl1">진행중</div></div>
+    <div class="step-line" id="sline1"></div>
+    <div class="step"><div class="step-dot" id="sd2"></div><div class="step-label" id="sl2">종료 1분전</div></div>
+    <div class="step-line" id="sline2"></div>
+    <div class="step"><div class="step-dot" id="sd3"></div><div class="step-label" id="sl3">종료</div></div>
   </div>
+</div>
 
-<!-- LOGIN -->
+<!-- 로그인 -->
 <div class="page" id="loginPage">
   <div class="login-card">
     <h2>관리자 로그인</h2>
-    <p>어드민 비밀번호를 입력하세요</p>
-    <input type="password" id="pwInput" placeholder="••••" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <p>비밀번호를 입력하세요</p>
+    <input class="pw-input" type="password" id="pwInput" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()"/>
     <button class="login-btn" onclick="doLogin()">로그인</button>
     <div class="error-msg" id="loginErr"></div>
   </div>
 </div>
 
-<!-- ADMIN -->
+<!-- 어드민 -->
 <div class="page" id="adminPage">
   <div class="admin-card">
     <div class="admin-title">타이머 관리</div>
@@ -139,12 +134,12 @@ body{font-family:'Nanum Gothic',sans-serif;background:#0f1117;color:#fff;min-hei
     <div class="time-row">
       <label>발표</label>
       <input type="number" id="presMin" value="20" min="1" max="99"/>
-      <span>분</span>
+      <span style="font-size:13px;color:#666">분</span>
     </div>
     <div class="time-row">
       <label>질의응답</label>
       <input type="number" id="qaMin" value="15" min="1" max="99"/>
-      <span>분</span>
+      <span style="font-size:13px;color:#666">분</span>
     </div>
 
     <div class="section-title">세션 전환</div>
@@ -156,15 +151,15 @@ body{font-family:'Nanum Gothic',sans-serif;background:#0f1117;color:#fff;min-hei
     <div class="section-title">타이머 제어</div>
     <div class="ctrl-btns">
       <button class="ctrl-btn btn-start" id="btnStart" onclick="doStart()">시작</button>
-      <button class="ctrl-btn btn-pause" id="btnPause" onclick="doPause()" disabled>일시정지</button>
-      <button class="ctrl-btn btn-stop" id="btnStop" onclick="doStop()" disabled>정지</button>
+      <button class="ctrl-btn btn-pause" id="btnPause" onclick="doPause()">일시정지</button>
+      <button class="ctrl-btn btn-stop"  id="btnStop"  onclick="doStop()">정지</button>
       <button class="ctrl-btn btn-reset" onclick="doReset()">초기화</button>
     </div>
 
     <div class="current-session">
       <div class="cs-label">현재 타이머</div>
-      <div class="cs-time" id="adminTime">--:--</div>
-      <div class="cs-session" id="adminSession">-</div>
+      <div class="cs-time" id="adminTime">00:00</div>
+      <div class="cs-session pres" id="adminSession">발표 세션</div>
     </div>
   </div>
 </div>
@@ -186,221 +181,187 @@ const db = firebase.database();
 const timerRef = db.ref('timer');
 
 let state = {
-  session: 'pres', presTotal: 1200, qaTotal: 900,
-  remaining: 1200, status: 'stopped', lastTick: null
+  session:'pres', presTotal:1200, qaTotal:900,
+  remaining:1200, status:'stopped', lastTick:null
 };
 let localInterval = null;
-let currentPage = 'viewer';
 let isAdmin = false;
+let currentPage = 'viewer';
 
-// 연결 상태 표시
-db.ref('.info/connected').on('value', snap => {
-  const el = document.getElementById('connStatus');
-  if (snap.val()) { el.textContent = '● 연결됨'; el.className = 'conn-status connected'; }
-  else { el.textContent = '● 연결 끊김'; el.className = 'conn-status disconnected'; }
+/* 연결 상태 */
+db.ref('.info/connected').on('value', s => {
+  const el = document.getElementById('connDot');
+  el.textContent = s.val() ? '● 연결됨' : '● 연결 끊김';
+  el.className = 'conn-dot ' + (s.val() ? 'on' : 'off');
 });
 
-// Firebase 실시간 리스닝
+/* Firebase 실시간 수신 */
 timerRef.on('value', snap => {
   const data = snap.val();
-  if (!data) { render(); return; }
-  // 관리자가 로컬 틱 중일 때는 remaining만 Firebase에서 덮어쓰지 않음
-  if (isAdmin && state.status === 'running') {
-    state = { ...data, remaining: state.remaining };
-  } else {
-    state = data;
-    // 클라이언트 측 경과 시간 보정
-    if (state.status === 'running' && state.lastTick) {
-      const elapsed = Math.floor((Date.now() - state.lastTick) / 1000);
-      state.remaining = Math.max(0, state.remaining - elapsed);
-      if (state.remaining === 0) state.status = 'ended';
+  if (data) {
+    if (isAdmin && state.status === 'running') {
+      state = {...data, remaining: state.remaining};
+    } else {
+      state = data;
+      if (state.status === 'running' && state.lastTick) {
+        const elapsed = Math.floor((Date.now() - state.lastTick) / 1000);
+        state.remaining = Math.max(0, state.remaining - elapsed);
+        if (state.remaining === 0) state.status = 'ended';
+      }
     }
   }
   render();
   if (isAdmin && state.status === 'running' && !localInterval) startLocalTick();
-  if (state.status !== 'running') { clearInterval(localInterval); localInterval = null; }
+  if (state.status !== 'running') stopTick();
 });
 
-function saveState() {
-  timerRef.set({ ...state, lastTick: Date.now() });
+/* 상태 저장 */
+function save() {
+  timerRef.set({...state, lastTick: Date.now()});
 }
 
+/* 포맷 */
 function fmt(s) {
   s = Math.max(0, Math.floor(s));
   return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
 }
 
+/* 렌더링 */
 function render() {
-  const rem = Math.max(0, state.remaining);
+  const rem = Math.max(0, Math.floor(state.remaining));
+
+  // 뷰어 타이머
   const disp = document.getElementById('timerDisplay');
-  const sl = document.getElementById('statusLabel');
   disp.textContent = fmt(rem);
+  if (state.status === 'ended') disp.className = 'timer-display ended';
+  else if (rem <= 60 && state.status === 'running') disp.className = 'timer-display warning';
+  else disp.className = 'timer-display normal';
 
-  let cls = 'normal';
-  if (state.status === 'ended') cls = 'ended';
-  else if (rem <= 60 && state.status === 'running') cls = 'warning';
-  disp.className = 'timer-display ' + cls;
-
-  const statusMap = {running:'실행 중',paused:'일시정지',stopped:'대기 중',ended:'종료'};
-  sl.textContent = statusMap[state.status] || '대기 중';
+  // 상태 텍스트
+  const sl = document.getElementById('statusLabel');
+  const map = {running:'실행 중', paused:'일시정지', stopped:'대기 중', ended:'종료'};
+  sl.textContent = map[state.status] || '대기 중';
   sl.className = 'status-label ' + state.status;
 
-  document.getElementById('tab-pres').className = 'tab ' + (state.session==='pres'?'active-tab':'inactive-tab');
-  document.getElementById('tab-qa').className = 'tab ' + (state.session==='qa'?'active-tab':'inactive-tab');
+  // 탭
+  document.getElementById('tab-pres').className = 'tab ' + (state.session==='pres' ? 'active-tab' : 'inactive-tab');
+  document.getElementById('tab-qa').className   = 'tab ' + (state.session==='qa'   ? 'active-tab' : 'inactive-tab');
   document.getElementById('sessionInfo').textContent =
     state.session==='pres' ? `발표 (${Math.round(state.presTotal/60)}분)` : `질의응답 (${Math.round(state.qaTotal/60)}분)`;
 
   // 상태바
-  const sessionLabel = state.session==='pres' ? '발표중' : '질의응답중';
-  const steps = [
-    {dot:'sd0', label:'sl0', line:'sl-line0', text:'준비'},
-    {dot:'sd1', label:'sl1', line:'sl-line1', text: sessionLabel},
-    {dot:'sd2', label:'sl2', line:'sl-line2', text:'종료 1분전'},
-    {dot:'sd3', label:'sl3', line:null,        text:'종료'},
-  ];
-  // 현재 단계 계산
+  const sessionWord = state.session==='pres' ? '발표중' : '질의응답중';
+  document.getElementById('sl1').textContent = sessionWord;
   let step = 0;
-  if (state.status==='running' || state.status==='paused') {
-    step = rem <= 60 ? 2 : 1;
-  } else if (state.status==='ended') {
-    step = 3;
-  }
-  steps.forEach((s, i) => {
-    const dot = document.getElementById(s.dot);
-    const lbl = document.getElementById(s.label);
-    document.getElementById(s.label).textContent = s.text;
-    if (i < step) {
-      dot.className='step-dot done'; lbl.className='step-label done';
-      if (s.line) document.getElementById(s.line).className='step-line done';
-    } else if (i === step) {
-      const cls = i===2?'warn': i===3?'ended':'active';
-      dot.className='step-dot '+cls; lbl.className='step-label '+cls;
-      if (s.line) document.getElementById(s.line).className='step-line';
-    } else {
-      dot.className='step-dot'; lbl.className='step-label';
-      if (s.line) document.getElementById(s.line).className='step-line';
+  if (state.status==='running' || state.status==='paused') step = rem<=60 ? 2 : 1;
+  else if (state.status==='ended') step = 3;
+  const dotCls  = ['active','active','warn','fin'];
+  const lblCls  = ['active','active','warn','fin'];
+  for (let i=0; i<4; i++) {
+    const dot = document.getElementById('sd'+i);
+    const lbl = document.getElementById('sl'+i);
+    if (i < step) { dot.className='step-dot done'; lbl.className='step-label done'; }
+    else if (i===step) { dot.className='step-dot '+dotCls[i]; lbl.className='step-label '+lblCls[i]; }
+    else { dot.className='step-dot'; lbl.className='step-label'; }
+    if (i < 3) {
+      document.getElementById('sline'+i).className = 'step-line' + (i<step ? ' done' : '');
     }
-  });
+  }
 
+  // 어드민
   document.getElementById('adminTime').textContent = fmt(rem);
-  const asSel = document.getElementById('adminSession');
-  asSel.textContent = state.session==='pres' ? '발표 세션' : '질의응답 세션';
-  asSel.className = 'cs-session ' + state.session;
-
+  const as = document.getElementById('adminSession');
+  as.textContent = state.session==='pres' ? '발표 세션' : '질의응답 세션';
+  as.className = 'cs-session ' + state.session;
   document.getElementById('presMin').value = Math.round(state.presTotal/60);
-  document.getElementById('qaMin').value = Math.round(state.qaTotal/60);
-
+  document.getElementById('qaMin').value   = Math.round(state.qaTotal/60);
   document.getElementById('btnStart').disabled = state.status==='running' || state.status==='ended';
   document.getElementById('btnPause').disabled = state.status!=='running';
-  document.getElementById('btnStop').disabled = state.status==='stopped' || state.status==='ended';
+  document.getElementById('btnStop').disabled  = state.status==='stopped'  || state.status==='ended';
 }
 
+/* 틱 */
 function startLocalTick() {
-  clearInterval(localInterval);
+  stopTick();
   localInterval = setInterval(() => {
-    if (state.status !== 'running') { clearInterval(localInterval); localInterval = null; return; }
+    if (state.status !== 'running') { stopTick(); return; }
     state.remaining = Math.max(0, state.remaining - 1);
     if (state.remaining === 0) {
-      state.status = 'ended';
-      clearInterval(localInterval); localInterval = null;
-      saveState();
+      state.status = 'ended'; stopTick(); save();
     } else {
-      timerRef.update({ remaining: state.remaining, lastTick: Date.now() });
+      timerRef.update({remaining: state.remaining, lastTick: Date.now()});
     }
     render();
   }, 1000);
 }
+function stopTick() { clearInterval(localInterval); localInterval = null; }
 
+/* 어드민 제어 */
 function doStart() {
   if (state.status==='running' || state.status==='ended') return;
-  state.status = 'running';
-  saveState();
-  startLocalTick();
+  state.status = 'running'; save(); startLocalTick();
 }
 function doPause() {
   if (state.status!=='running') return;
-  state.status = 'paused';
-  clearInterval(localInterval); localInterval = null;
-  saveState();
+  state.status = 'paused'; stopTick(); save();
 }
 function doStop() {
-  state.status = 'stopped';
-  clearInterval(localInterval); localInterval = null;
-  saveState();
+  state.status = 'stopped'; stopTick(); save();
 }
 function doReset() {
-  clearInterval(localInterval); localInterval = null;
+  stopTick();
   state.remaining = state.session==='pres' ? state.presTotal : state.qaTotal;
-  state.status = 'stopped';
-  state.lastTick = null;
-  saveState();
+  state.status = 'stopped'; state.lastTick = null; save();
 }
 function switchSession(s) {
-  clearInterval(localInterval); localInterval = null;
+  stopTick();
   state.session = s;
   state.remaining = s==='pres' ? state.presTotal : state.qaTotal;
-  state.status = 'stopped';
-  state.lastTick = null;
-  saveState();
+  state.status = 'stopped'; state.lastTick = null; save();
 }
 
 document.getElementById('presMin').addEventListener('change', function() {
   const v = Math.max(1, Math.min(99, parseInt(this.value)||20));
-  this.value = v;
-  state.presTotal = v * 60;
-  if (state.session==='pres') { state.remaining = state.presTotal; state.status='stopped'; }
-  saveState();
+  this.value = v; state.presTotal = v*60;
+  if (state.session==='pres') { state.remaining=state.presTotal; state.status='stopped'; }
+  save();
 });
 document.getElementById('qaMin').addEventListener('change', function() {
   const v = Math.max(1, Math.min(99, parseInt(this.value)||15));
-  this.value = v;
-  state.qaTotal = v * 60;
-  if (state.session==='qa') { state.remaining = state.qaTotal; state.status='stopped'; }
-  saveState();
+  this.value = v; state.qaTotal = v*60;
+  if (state.session==='qa') { state.remaining=state.qaTotal; state.status='stopped'; }
+  save();
 });
 
-// 페이지 전환
+/* 페이지 전환 */
+function showPage(name) {
+  ['viewerPage','loginPage','adminPage'].forEach(id => {
+    document.getElementById(id).classList.toggle('active', id === name+'Page');
+  });
+  currentPage = name;
+  document.getElementById('navLink').textContent = name==='viewer' ? '관리자' : '뷰어로 돌아가기';
+}
 function toggleNav() {
-  if (currentPage==='viewer') showLogin();
-  else { isAdmin=false; showViewer(); }
-}
-function showViewer() {
-  currentPage='viewer';
-  document.getElementById('viewerPage').classList.add('active');
-  document.getElementById('loginPage').classList.remove('active');
-  document.getElementById('adminPage').classList.remove('active');
-  document.getElementById('navLink').textContent='관리자';
-}
-function showLogin() {
-  currentPage='login';
-  document.getElementById('loginPage').classList.add('active');
-  document.getElementById('viewerPage').classList.remove('active');
-  document.getElementById('adminPage').classList.remove('active');
-  document.getElementById('navLink').textContent='뷰어로 돌아가기';
-}
-function showAdmin() {
-  currentPage='admin'; isAdmin=true;
-  document.getElementById('adminPage').classList.add('active');
-  document.getElementById('viewerPage').classList.remove('active');
-  document.getElementById('loginPage').classList.remove('active');
-  document.getElementById('navLink').textContent='뷰어로 돌아가기';
-  if (state.status==='running') startLocalTick();
+  if (currentPage==='viewer') showPage('login');
+  else { isAdmin=false; stopTick(); showPage('viewer'); }
 }
 function doLogin() {
-  const pw = document.getElementById('pwInput').value;
-  if (pw===ADMIN_PW) {
-    document.getElementById('loginErr').textContent='';
-    document.getElementById('pwInput').value='';
-    showAdmin();
+  if (document.getElementById('pwInput').value === ADMIN_PW) {
+    document.getElementById('loginErr').textContent = '';
+    document.getElementById('pwInput').value = '';
+    isAdmin = true;
+    showPage('admin');
+    if (state.status==='running') startLocalTick();
   } else {
-    document.getElementById('loginErr').textContent='비밀번호가 올바르지 않습니다.';
+    document.getElementById('loginErr').textContent = '비밀번호가 올바르지 않습니다.';
   }
 }
 
-document.getElementById('navLink').textContent='관리자';
+/* 초기화 */
+timerRef.once('value', snap => {
+  if (!snap.val()) save();
+});
 render();
-// Firebase에 초기 데이터가 없으면 기본값 저장
-timerRef.once('value', snap => { if (!snap.val()) saveState(); });
 </script>
 </body>
 </html>
