@@ -13,10 +13,10 @@ body{font-family:'Nanum Gothic',sans-serif;background:#0f1117;color:#fff;min-hei
 .page.active{display:flex;flex-direction:column;align-items:center}
 
 .session-tabs{display:flex;gap:12px;margin-bottom:2rem}
-.tab{padding:10px 28px;border-radius:50px;font-size:15px;font-weight:600;cursor:default;border:2px solid transparent;transition:all .3s}
+.tab{padding:16px 48px;border-radius:50px;font-size:22px;font-weight:600;cursor:default;border:2px solid transparent;transition:all .3s}
 .tab.active-tab{background:#4f8ef7;color:#fff;border-color:#4f8ef7}
 .tab.inactive-tab{background:rgba(255,255,255,.08);color:#aaa;border-color:rgba(255,255,255,.1)}
-.timer-display{font-size:clamp(80px,18vw,180px);font-weight:700;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;transition:color .3s}
+.timer-display{font-size:clamp(160px,36vw,360px);font-weight:700;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;transition:color .3s}
 .timer-display.normal{color:#ffffff}
 .timer-display.warning{color:#f59e0b;animation:pulse 1s infinite}
 .timer-display.danger{color:#ef4444;animation:pulse .5s infinite}
@@ -28,6 +28,20 @@ body{font-family:'Nanum Gothic',sans-serif;background:#0f1117;color:#fff;min-hei
 .status-label.stopped{color:#aaa}
 .status-label.ended{color:#ef4444}
 .session-info{margin-top:1rem;font-size:14px;color:#666}
+.status-bar{display:flex;align-items:center;margin-top:2.5rem;gap:0}
+.step{display:flex;flex-direction:column;align-items:center;gap:8px}
+.step-dot{width:20px;height:20px;border-radius:50%;background:#2a2d3a;border:2px solid #333;transition:all .4s}
+.step-dot.active{background:#4f8ef7;border-color:#4f8ef7;box-shadow:0 0 12px #4f8ef7aa}
+.step-dot.done{background:#4ade80;border-color:#4ade80}
+.step-dot.warn{background:#f59e0b;border-color:#f59e0b;box-shadow:0 0 12px #f59e0baa;animation:pulse 1s infinite}
+.step-dot.ended{background:#ef4444;border-color:#ef4444;box-shadow:0 0 12px #ef4444aa}
+.step-label{font-size:13px;color:#555;transition:color .4s;white-space:nowrap}
+.step-label.active{color:#4f8ef7;font-weight:600}
+.step-label.done{color:#4ade80}
+.step-label.warn{color:#f59e0b;font-weight:600}
+.step-label.ended{color:#ef4444;font-weight:600}
+.step-line{width:60px;height:2px;background:#2a2d3a;margin-bottom:22px;transition:background .4s}
+.step-line.done{background:#4ade80}
 
 .admin-card{background:#1a1d27;border-radius:16px;padding:2rem;width:100%;max-width:520px}
 .admin-title{font-size:22px;font-weight:700;margin-bottom:1.5rem;text-align:center;color:#e2e8f0}
@@ -83,7 +97,27 @@ body{font-family:'Nanum Gothic',sans-serif;background:#0f1117;color:#fff;min-hei
   <div class="timer-display normal" id="timerDisplay">--:--</div>
   <div class="status-label stopped" id="statusLabel">대기 중</div>
   <div class="session-info" id="sessionInfo"></div>
-</div>
+  <div class="status-bar" id="statusBar">
+    <div class="step">
+      <div class="step-dot" id="sd0"></div>
+      <div class="step-label" id="sl0">준비</div>
+    </div>
+    <div class="step-line" id="sl-line0"></div>
+    <div class="step">
+      <div class="step-dot" id="sd1"></div>
+      <div class="step-label" id="sl1">진행중</div>
+    </div>
+    <div class="step-line" id="sl-line1"></div>
+    <div class="step">
+      <div class="step-dot" id="sd2"></div>
+      <div class="step-label" id="sl2">종료 1분전</div>
+    </div>
+    <div class="step-line" id="sl-line2"></div>
+    <div class="step">
+      <div class="step-dot" id="sd3"></div>
+      <div class="step-label" id="sl3">종료</div>
+    </div>
+  </div>
 
 <!-- LOGIN -->
 <div class="page" id="loginPage">
@@ -216,6 +250,38 @@ function render() {
   document.getElementById('sessionInfo').textContent =
     state.session==='pres' ? `발표 (${Math.round(state.presTotal/60)}분)` : `질의응답 (${Math.round(state.qaTotal/60)}분)`;
 
+  // 상태바
+  const sessionLabel = state.session==='pres' ? '발표중' : '질의응답중';
+  const steps = [
+    {dot:'sd0', label:'sl0', line:'sl-line0', text:'준비'},
+    {dot:'sd1', label:'sl1', line:'sl-line1', text: sessionLabel},
+    {dot:'sd2', label:'sl2', line:'sl-line2', text:'종료 1분전'},
+    {dot:'sd3', label:'sl3', line:null,        text:'종료'},
+  ];
+  // 현재 단계 계산
+  let step = 0;
+  if (state.status==='running' || state.status==='paused') {
+    step = rem <= 60 ? 2 : 1;
+  } else if (state.status==='ended') {
+    step = 3;
+  }
+  steps.forEach((s, i) => {
+    const dot = document.getElementById(s.dot);
+    const lbl = document.getElementById(s.label);
+    document.getElementById(s.label).textContent = s.text;
+    if (i < step) {
+      dot.className='step-dot done'; lbl.className='step-label done';
+      if (s.line) document.getElementById(s.line).className='step-line done';
+    } else if (i === step) {
+      const cls = i===2?'warn': i===3?'ended':'active';
+      dot.className='step-dot '+cls; lbl.className='step-label '+cls;
+      if (s.line) document.getElementById(s.line).className='step-line';
+    } else {
+      dot.className='step-dot'; lbl.className='step-label';
+      if (s.line) document.getElementById(s.line).className='step-line';
+    }
+  });
+
   document.getElementById('adminTime').textContent = fmt(rem);
   const asSel = document.getElementById('adminSession');
   asSel.textContent = state.session==='pres' ? '발표 세션' : '질의응답 세션';
@@ -238,8 +304,7 @@ function startLocalTick() {
       state.status = 'ended';
       clearInterval(localInterval); localInterval = null;
       saveState();
-    } else if (state.remaining % 5 === 0) {
-      // 5초마다 Firebase 동기화
+    } else {
       timerRef.update({ remaining: state.remaining, lastTick: Date.now() });
     }
     render();
