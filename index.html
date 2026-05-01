@@ -303,8 +303,12 @@ function doStart() {
   if (state.status==='running' || state.status==='ended') return;
   state.status = 'running';
   state.lastTick = Date.now();
-  timerRef.set({...state});
+  ignoreFirebase = true;
+  timerRef.set({...state}).then(() => {
+    ignoreFirebase = false;
+  });
   startLocalTick();
+  render();
 }
 function doPause() {
   if (state.status!=='running') return;
